@@ -1,0 +1,70 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  phoneNumber  String
+  password     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  oderbook     Orderbook[]
+  balance      Float?
+  transactions Transaction[]
+  asset        Asset[]
+  otp          Otp[]
+}
+
+model Orderbook {
+  id          String        @id @default(uuid())
+  type        String
+  qyt         Int
+  price       Float
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  transaction Transaction[]
+  asset       Asset[]
+}
+
+model Transaction {
+  id          String    @id @default(uuid())
+  amount      Float
+  qyt         Int
+  orderBookId String
+  orderBook   Orderbook @relation(fields: [orderBookId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  assetId     String
+  asset       Asset     @relation(fields: [assetId], references: [id])
+}
+
+model Asset {
+  id          String        @id @default(uuid())
+  title       String
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  orderBookId String?
+  orderBook   Orderbook?    @relation(fields: [orderBookId], references: [id])
+  image       String?
+  maxPrice    Int
+  Transaction Transaction[]
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  otp       Int      @unique
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
