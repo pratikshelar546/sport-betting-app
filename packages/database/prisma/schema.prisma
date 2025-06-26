@@ -27,38 +27,49 @@ model User {
 model Orderbook {
   id          String        @id @default(uuid())
   type        String
-  qyt         Int
+  qty         Int
   price       Float
+  executed    Boolean       @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+
   userId      String
   user        User          @relation(fields: [userId], references: [id])
+
+  assetId     String
+  asset       Asset         @relation(fields:[assetId],references:[id])
+
   transaction Transaction[]
-  asset       Asset[]
 }
 
 model Transaction {
   id          String    @id @default(uuid())
   amount      Float
-  qyt         Int
+  qty         Int
+  type        String
+  executed    Boolean    @default(false)
+
   orderBookId String
   orderBook   Orderbook @relation(fields: [orderBookId], references: [id])
+
   userId      String
   user        User      @relation(fields: [userId], references: [id])
+
   assetId     String
   asset       Asset     @relation(fields: [assetId], references: [id])
 }
 
 model Asset {
-  id          String        @id @default(uuid())
-  title       String
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
-  orderBookId String?
-  orderBook   Orderbook?    @relation(fields: [orderBookId], references: [id])
-  image       String?
-  maxPrice    Int
-  Transaction Transaction[]
+  id            String        @id @default(uuid())
+  title         String
+  maxPrice      Int         @default(0)
+  currentPrice  Int        @default(0)
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+
+  image         String?
+  orders        Orderbook[]
+  Transaction   Transaction[]
 }
 
 model Otp {

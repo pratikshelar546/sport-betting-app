@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Asset" ADD COLUMN     "currentPrice" INTEGER NOT NULL DEFAULT 0,
+ALTER COLUMN "maxPrice" SET DEFAULT 0;

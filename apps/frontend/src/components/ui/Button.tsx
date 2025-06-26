@@ -17,7 +17,7 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ({ label, className, variant = "primary", size = "md", disabled = false, ...props }, ref) => {
 
-        const baseStyle = "px-6 py-2 rounded-md font-semibold text-white cursor-pointer";
+        const baseStyle = "px-6 py-2 rounded-md font-semibold cursor-pointer";
 
         const sizeStyle = {
             sm: "text-sm px-4 py-2",
@@ -28,7 +28,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         const variantStyle = {
             primary: "bg-blue-500 hover:bg-blue-600 text-white",
             secoundary: "bg-white hover:bg-green-400 text-black",
-            outlined: "border-2 border-netural-500 text-neutral-500 hover:bg-neutral-500 hover:text-white",
+            outlined: "border-2 border-netural-500 hover:bg-neutral-500 hover:text-white",
         }
 
         const combineStyle = classNames(
@@ -44,8 +44,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <button
                 disabled={disabled}
                 ref={ref}
-                className={combineStyle}
                 {...props}
+                className={combineStyle}
             >
                 {label}
             </button>

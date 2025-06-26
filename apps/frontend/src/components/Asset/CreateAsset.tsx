@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import { toast } from "react-toastify";
-// import { prismaClient } from "@repo/database/client"; // Not used here
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { DefaultSession } from "next-auth";

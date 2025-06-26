@@ -1,6 +1,11 @@
+"use client";
 import Image from "next/image";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "../ui/Button";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authHandler";
+import PlaceOrderModal from "./PlaceOrderModal";
+import useModal from "@/hooks/useModal";
 
 export interface asset {
   id: string;
@@ -12,8 +17,19 @@ export interface asset {
 }
 
 const AssetCard = ({ asset }: { asset: asset }) => {
+  const [openModal, setOpenModal] = useState(false);
+  const [orderType, setOrderType] = useState("");
+  const { onOpen, onClose } = useModal();
   return (
     <>
+      {openModal && (
+        <PlaceOrderModal
+          type={orderType}
+          open={openModal}
+          setOpenModal={setOpenModal}
+          assetId={asset.id}
+        />
+      )}
       <div className="flex flex-col px-4 py-3 bg-transparent border border-neutral-500 text-white gap-8">
         <div className="flex gap-2">
           {asset.image && <Image src={asset.image} alt={asset.title} />}
@@ -21,15 +37,23 @@ const AssetCard = ({ asset }: { asset: asset }) => {
         </div>
         <div className="flex flex-2 gap-4 justify-center items-center ">
           <Button
-            className="text-white text-lg px-6 py-1  bggit -green-400 hover:bg-emerald-300"
+            className="text-white text-lg px-6 py-1  bg-green-400 hover:bg-emerald-300"
             size="sm"
             label="Buy Yes"
+            onClick={() => {
+              setOpenModal(true);
+              setOrderType("yes");
+            }}
           />
 
           <Button
             className="text-white text-lg px-6 py-1  bg-red-400 hover:bg-red-300"
             size="sm"
             label="Buy No"
+            onClick={() => {
+              setOpenModal(true);
+              setOrderType("no");
+            }}
           />
         </div>
       </div>
