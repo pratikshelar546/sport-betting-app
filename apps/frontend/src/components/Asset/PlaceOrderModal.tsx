@@ -68,7 +68,6 @@ const PlaceOrderModal = ({
       }));
     }
 
-    console.log(assetId);
     const data = {
       price: amount,
       qty,

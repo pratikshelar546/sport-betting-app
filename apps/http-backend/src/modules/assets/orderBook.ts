@@ -12,8 +12,7 @@ export const placeOrder = async (
     const { assetId } = req.params;
     const { id } = req.user as User;
     const { price, qty, type } = req.body;
-    console.log();
-    
+
     if (!price || !qty || !type || !id || !assetId)
       throw new AppError("Data invalid", 409);
 

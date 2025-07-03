@@ -27,7 +27,7 @@ export const placeOrderService = async ({
   type,
   price,
   userId,
-  assetId
+  assetId,
 }: Order): Promise<Order | any> => {
   try {
     const placeOrder = await prismaClient.orderbook.create({
@@ -36,10 +36,22 @@ export const placeOrderService = async ({
         type,
         price,
         userId,
-        assetId
+        assetId,
       },
     });
     return placeOrder;
+  } catch (error: any) {
+    throw new error();
+  }
+};
+
+export const getAssetDetails = async ({ id }: { id: string }): Promise<any> => {
+  try {
+    const getAssetDetails = await prismaClient.asset.findFirst({
+      where: { id },
+    });
+
+    return getAssetDetails;
   } catch (error: any) {
     throw new error();
   }
