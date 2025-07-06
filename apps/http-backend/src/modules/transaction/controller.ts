@@ -9,11 +9,11 @@ export const placeOrder = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    const { assetId } = req.params;
+    const { id: assetId } = req.params;
     const { id } = req.user as User;
-    const { price, qty, type } = req.body;
+    const { price, qty, type, method } = req.body;
 
-    if (!price || !qty || !type || !id || !assetId)
+    if (!price || !qty || !type || !id || !assetId || !method)
       throw new AppError("Data invalid", 409);
 
     const placedOrder = await placeOrderService({
@@ -22,6 +22,7 @@ export const placeOrder = async (
       price,
       userId: id,
       assetId,
+      method
     });
 
     return res.status(200).json({

@@ -25,51 +25,56 @@ model User {
 }
 
 model Orderbook {
-  id          String        @id @default(uuid())
-  type        String
-  qty         Int
-  price       Float
-  executed    Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String   @id @default(uuid())
+  type      String
+  qty       Int
+  price     Float
+  method    String   @default("sell")
+  executed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  assetId     String
-  asset       Asset         @relation(fields:[assetId],references:[id])
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id])
 
   transaction Transaction[]
 }
 
 model Transaction {
-  id          String    @id @default(uuid())
-  amount      Float
-  qty         Int
-  type        String
-  executed    Boolean    @default(false)
+  id       String  @id @default(uuid())
+  amount   Float
+  qty      Int
+  type     String
+  method   String  @default("sell")
+  executed Boolean @default(false)
 
   orderBookId String
   orderBook   Orderbook @relation(fields: [orderBookId], references: [id])
 
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  assetId     String
-  asset       Asset     @relation(fields: [assetId], references: [id])
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id])
 }
 
 model Asset {
-  id            String        @id @default(uuid())
-  title         String
-  maxPrice      Int         @default(0)
-  currentPrice  Int        @default(0)
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
+  id           String @id @default(uuid())
+  title        String
+  maxPrice     Int    @default(0)
+  buyPriceYes  Int    @default(0)
+  buyPriceNo   Int    @default(0)
+  sellPriceYes Int    @default(0)
+  sellPriceNo  Int    @default(0)
+  userId       String
+  user         User   @relation(fields: [userId], references: [id])
 
-  image         String?
-  orders        Orderbook[]
-  Transaction   Transaction[]
+  image       String?
+  orders      Orderbook[]
+  Transaction Transaction[]
 }
 
 model Otp {

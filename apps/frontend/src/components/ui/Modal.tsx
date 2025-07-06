@@ -10,7 +10,11 @@ const Modal = forwardRef<HTMLDialogElement, ModalProps>(
     // Only call onClose if the user clicks the backdrop, not the dialog itself
     const handleDialogClick = (e: React.MouseEvent<HTMLDialogElement>) => {
       // Only close if the click is on the backdrop, not inside the dialog content
+      console.log("here", e.target, e.currentTarget);
+
       if (e.target === e.currentTarget) {
+        console.log(onclose);
+
         onClose();
       }
     };
@@ -33,12 +37,12 @@ const Modal = forwardRef<HTMLDialogElement, ModalProps>(
           margin: 0,
           padding: 0,
           border: 0,
-          background: "transparent",
+          background: "rgba(0, 0, 0, 0.5)",
           backdropFilter: "blur(1px)",
         }}
       >
         <div
-          className="bg-neutral-700 rounded-lg shadow-lg relative"
+          className=" rounded-lg shadow-lg relative"
           style={{
             // minWidth: "320px",
             // minHeight: "120px",

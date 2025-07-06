@@ -1,5 +1,5 @@
 import prismaClient from "@repo/database/client";
-import { Asset, Order } from "./types";
+import { Asset } from "./types";
 
 export const addAsset = async ({
   userId,
@@ -16,34 +16,17 @@ export const addAsset = async ({
         ...(image && { image }),
       },
     });
+    console.log(asset, "here");
+
     return asset;
-  } catch (error: any) {
-    throw new error();
+  } catch (error) {
+    console.log("here giving you error");
+
+    throw error;
   }
 };
 
-export const placeOrderService = async ({
-  qty,
-  type,
-  price,
-  userId,
-  assetId,
-}: Order): Promise<Order | any> => {
-  try {
-    const placeOrder = await prismaClient.orderbook.create({
-      data: {
-        qty,
-        type,
-        price,
-        userId,
-        assetId,
-      },
-    });
-    return placeOrder;
-  } catch (error: any) {
-    throw new error();
-  }
-};
+
 
 export const getAssetDetails = async ({ id }: { id: string }): Promise<any> => {
   try {
@@ -52,7 +35,7 @@ export const getAssetDetails = async ({ id }: { id: string }): Promise<any> => {
     });
 
     return getAssetDetails;
-  } catch (error: any) {
-    throw new error();
+  } catch (error) {
+    throw error;
   }
 };

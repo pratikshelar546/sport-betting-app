@@ -9,13 +9,18 @@ const AssetList = async () => {
 
 
   const assets: asset[] = await getAllAsset();
+  console.log(assets, "assets");
 
-
+  if (!assets) return (
+    <div>
+      Asset Not Found! add new assets
+    </div>
+  )
   return (
     <>
       <div className="grid grid-cols-5 gap-5">
         {assets?.map((asset, id) => {
-          return <AssetCard asset={asset} key={id}/>;
+          return <AssetCard asset={asset} key={id} />;
         })}
       </div>
     </>

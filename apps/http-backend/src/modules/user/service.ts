@@ -1,6 +1,5 @@
 import prismaClient from "@repo/database/client";
 import { User } from "./types";
-import { AppError } from "../../utlis/AppError";
 // All logic and db call will be done from here only
 
 export const findEmailAlreadyExist = async (

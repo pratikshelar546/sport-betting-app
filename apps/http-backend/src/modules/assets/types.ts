@@ -6,11 +6,4 @@ export interface Asset {
   image?: string;
 }
 
-export interface Order {
-  qty: number;
-  price: number;
-  type: string;
-  userId: string;
-  id?: string;
-  assetId: string;
-}
+
