@@ -28,16 +28,15 @@ const OrderModal: React.FC<OrderModalProps> = ({
   const { id } = useParams();
   const { data: session } = useSession();
   const route = useRouter();
-
+  console.log(formData, "formData");
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const loading = toast.loading("Order Processing");
-    console.log(currentPrice, ((formData.price || 0) / currentPrice) || 1);
 
     const data = {
       price: formData.price,
       type: formData.type,
-      qty: ((formData.price || 0) / currentPrice || 1) || 1,
+      qty: formData.qty,
       assetId: id,
       method: orderType
     };
@@ -79,7 +78,6 @@ const OrderModal: React.FC<OrderModalProps> = ({
   };
 
   if (!open) return null;
-  console.log(formData, currentPrice);
 
   return (
     <Modal onClose={() => setOpen(false)}>

@@ -22,21 +22,18 @@ export const authenticateUser = (
     next: NextFunction
 ) => {
     const authToken = req.headers.authorization;
-
     if (!authToken || !authToken.startsWith("Bearer")) {
         throw new AppError("uauthorized", 401);
     }
     const token = authToken.split(" ")[1];
-    console.log(token);
-
     try {
         if (!token) return
         const decoded = jwt.verify(token, jwtSecret) as decodedToken;
-        console.log(decoded, "decoded");
-
         req.user = decoded;
         next();
     } catch (error: any) {
+        console.log("error in authenticateUser", error);
+        
         throw new AppError(error.message || "Somthing went wrong", 500)
     }
 }

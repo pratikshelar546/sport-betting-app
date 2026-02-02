@@ -89,4 +89,8 @@ export const authOptions = {
       return newSession!;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-change-in-production",
+  pages: {
+    signIn: "/login",
+  },
 } satisfies NextAuthOptions;

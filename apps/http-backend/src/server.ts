@@ -18,6 +18,8 @@ app.use((req, res, next) => {
     "Origin, X-Requested-With, Content-Type, Accept"
   );
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${req.method} ${req.path}`);
   next();
 });
 
@@ -27,7 +29,7 @@ app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/asset", assetRoute);
 app.use("/api/v1/transaction", transactionRoute);
 
-app.use(errorHandler);
+// app.use(errorHandler);
 
 app.listen(8000, () => {
   console.log("Server is running on port 8000");

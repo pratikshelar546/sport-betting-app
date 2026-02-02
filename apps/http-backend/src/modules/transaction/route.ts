@@ -3,8 +3,9 @@ import { authenticateUser } from "../../middleware/index";
 import { placeOrder } from "./controller";
 
 const router: Router = express.Router();
-router.get("/", () => {
+router.get("/", (req,res) => {
   console.log("herrr");
+  res.send("reee")
 });
 router.post("/placeorder/:id", authenticateUser, placeOrder);
 

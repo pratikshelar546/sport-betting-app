@@ -10,6 +10,8 @@ export const placeOrderService = async ({
   assetId,
   method
 }: Order): Promise<Order | any> => {
+  console.log("placign order");
+  
   try {
     const placeOrder = await prismaClient.orderbook.create({
       data: {

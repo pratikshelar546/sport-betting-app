@@ -126,6 +126,8 @@ const AssetDetails = () => {
           onTabChange={setActiveTab}
         />
         <div>
+          <div className="flex flex-row gap-4 justify-center items-center">
+
           <Input
             type="text"
             label="Price (₹)"
@@ -145,6 +147,26 @@ const AssetDetails = () => {
             className="w-full"
             required
           />
+<Input
+            type="text"
+            label="Quantity"
+            value={formData.qty || ""}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Only allow numbers and decimal points
+              if (/^\d*\.?\d*$/.test(value) || value === "") {
+                setFormData({
+                  ...formData,
+                  qty: value === "" ? NaN : parseFloat(value),
+                });
+              }
+            }}
+            placeholder="Enter quantity"
+            className="w-full"
+            required
+          />
+  
+          </div>
           <p className="text-sm text-neutral-400 mt-1">
             Current price: ₹{asset?.maxPrice}
           </p>
