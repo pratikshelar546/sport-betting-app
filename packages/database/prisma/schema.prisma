@@ -6,6 +6,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // This pulls from your .env file automatically
+  url      = env("DATABASE_URL")
 }
 model User {
   id           String        @id @default(uuid())
@@ -26,6 +28,7 @@ model Orderbook {
   id        String   @id @default(uuid())
   type      String
   qty       Int
+  remainingQty Int @default(0)
   price     Float
   method    String   @default("sell")
   executed  Boolean  @default(false)

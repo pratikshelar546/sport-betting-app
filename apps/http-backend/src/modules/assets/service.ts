@@ -1,5 +1,6 @@
 import prismaClient from "@repo/database/client";
 import { Asset } from "./types";
+import { AppError } from "../../utlis/AppError";
 
 export const addAsset = async ({
   userId,
@@ -26,8 +27,6 @@ export const addAsset = async ({
   }
 };
 
-
-
 export const getAssetDetails = async ({ id }: { id: string }): Promise<any> => {
   try {
     const getAssetDetails = await prismaClient.asset.findFirst({
@@ -35,6 +34,22 @@ export const getAssetDetails = async ({ id }: { id: string }): Promise<any> => {
     });
 
     return getAssetDetails;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchOrderBook = async ({ id }: { id: string }) => {
+  try {
+    const asset = await getAssetDetails({ id });
+    if (!asset) {
+      throw new AppError("Asset not found", 404);
+    }
+    const orders = await prismaClient.orderbook.findMany({
+      where: { assetId: id },
+      orderBy: [{ price: "desc" }, { createdAt: "desc" }],
+    });
+    return orders;
   } catch (error) {
     throw error;
   }

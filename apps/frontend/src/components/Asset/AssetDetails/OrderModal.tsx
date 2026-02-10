@@ -71,7 +71,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
     // Reset form
     setOpen(false);
     setFormData({
-      type: orderType,
+      type: formData.type,
       price: NaN,
       qty: NaN,
     });

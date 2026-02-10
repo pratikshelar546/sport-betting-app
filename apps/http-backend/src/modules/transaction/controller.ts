@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { User } from "../user/types";
 import { AppError } from "../../utlis/AppError";
-import { placeOrderService } from "./service";
+import { executeOrder, placeOrderService } from "./service";
 console.log("dd");
 
 export const placeOrder = async (
@@ -27,10 +27,21 @@ export const placeOrder = async (
       method
     });
 
+    const {success,message} = await executeOrder({
+      qty,
+      price,
+      type,
+      method,
+      assetId,
+      id:placedOrder.orderBookId
+    })
+
     return res.status(200).json({
       message: "Order placed successfully",
       success: true,
       orderId: placedOrder?.id,
+      orderExecuted:success,
+      order_message:message
     });
   } catch (error) {
     console.log("Error while placing order", error);

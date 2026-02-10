@@ -1,14 +1,12 @@
 "use client";
-import { server } from "@/utlis/server";
-import axios from "axios";
-import { useParams } from "next/navigation";
-import React, { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-import { useState } from "react";
-import windowImg from "@/public/window.svg";
-import Tab from "./Tab";
-import OrderModal from "./OrderModal";
 import { Input } from "@/components/ui/Input";
+import { server } from "@/utlis/server";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import OrderModal from "./OrderModal";
+import OrderBook from "./OrderBook";
+import Tab from "./Tab";
 export interface Asset {
   title: string,
   image?: string,
@@ -88,38 +86,48 @@ const AssetDetails = () => {
 
   const handleSellOrder = (type: string) => {
     setOrderType("Sell");
+    setFormData((prev) => ({
+      ...prev,
+      type: type,
+    }));
     setOpenModal(true);
   };
 
   return (
-    <div className="flex flex-col md:flex-row justify-center items-center min-h-[80vh] bg-neutral-900 w-full px-4 py-8 gap-8">
-      {/* Details Side */}
-      <div className="flex-1 flex flex-col items-center md:items-start bg-neutral-800 rounded-xl shadow-lg p-8 border border-neutral-700 w-full max-w-xl">
-        <img
-          src={imageSrc}
-          alt={asset.title}
-          className="w-40 h-40 object-cover rounded-lg border border-neutral-700 shadow mb-6 bg-neutral-700"
-        />
-        <h2 className="text-3xl font-bold text-white mb-4 text-center md:text-left">
-          {asset.title}
-        </h2>
-        <div className="flex flex-col gap-3 w-full">
-          <div className="flex justify-between text-lg text-neutral-300">
-            <span>Current Price:</span>
-            <span className="font-semibold text-green-400">
-              ₹{asset.maxPrice}
-            </span>
-          </div>
-          <div className="flex justify-between text-lg text-neutral-300">
-            <span>Max Price:</span>
-            <span className="font-semibold text-blue-400">
-              ₹{asset.maxPrice}
-            </span>
+    <div className="flex flex-col md:flex-row min-h-[80vh] bg-neutral-900 w-full px-4 py-8 gap-6 md:gap-8">
+      {/* Left: Asset details + Order book (scrollable) */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <div className="flex flex-col items-center md:items-start bg-neutral-800 rounded-xl shadow-lg p-8 border border-neutral-700 w-full max-w-xl">
+          <img
+            src={imageSrc}
+            alt={asset.title}
+            className="w-40 h-40 object-cover rounded-lg border border-neutral-700 shadow mb-6 bg-neutral-700"
+          />
+          <h2 className="text-3xl font-bold text-white mb-4 text-center md:text-left">
+            {asset.title}
+          </h2>
+          <div className="flex flex-col gap-3 w-full">
+            <div className="flex justify-between text-lg text-neutral-300">
+              <span>Current Price:</span>
+              <span className="font-semibold text-green-400">
+                ₹{asset.maxPrice}
+              </span>
+            </div>
+            <div className="flex justify-between text-lg text-neutral-300">
+              <span>Max Price:</span>
+              <span className="font-semibold text-blue-400">
+                ₹{asset.maxPrice}
+              </span>
+            </div>
           </div>
         </div>
+        <div className="w-full max-w-xl mt-4 flex-1 min-h-0 flex flex-col">
+          <OrderBook assetId={asset.id} />
+        </div>
       </div>
-      {/* Buy/Sell Side with Tabs */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-neutral-800 rounded-xl shadow-lg p-8 border border-neutral-700 w-full max-w-md gap-8">
+
+      {/* Right: Buy/Sell panel (sticky) */}
+      <div className="w-full md:w-auto md:max-w-md shrink-0 md:sticky md:top-8 md:self-start flex flex-col bg-neutral-800 rounded-xl shadow-lg p-8 border border-neutral-700 gap-6">
         <Tab
           tabs={["Buy", "Sell"]}
           activeTab={activeTab}
@@ -232,6 +240,7 @@ const AssetDetails = () => {
           </>
         )}
       </div>
+
       <OrderModal
         open={openModal}
         setOpen={setOpenModal}

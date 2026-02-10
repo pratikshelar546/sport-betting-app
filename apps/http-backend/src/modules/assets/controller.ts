@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { addAsset, getAssetDetails } from "./service";
+import { addAsset, fetchOrderBook, getAssetDetails } from "./service";
 import { Asset } from "./types";
 import { AppError } from "../../utlis/AppError";
 import { User } from "../user/types";
@@ -50,3 +50,23 @@ export const getAsset = async (
     next(error);
   }
 };
+
+export const getAssetOrderBook = async (req:Request,res:Response,next:NextFunction) :Promise<any>=>{
+  try {
+    const { id } = req.params;
+    if (!id) throw new AppError("Asset id is required", 400);
+
+    const orderBook = await fetchOrderBook({
+      id,
+    })
+    return res.status(200).json({
+      message: "Fetched order book",
+      success: true,
+      data: orderBook,
+    });
+  } catch (error) {
+    console.log("error while getting order book by asset:",error);
+    
+    next(error)
+  }
+}
