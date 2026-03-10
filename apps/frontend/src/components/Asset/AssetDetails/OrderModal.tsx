@@ -14,6 +14,7 @@ interface OrderModalProps {
   currentPrice: number;
   formData: { price: number; type: string; qty: number };
   setFormData: (formData: { price: number; type: string; qty: number }) => void;
+  updateOrderBook: () => void;
 }
 
 const OrderModal: React.FC<OrderModalProps> = ({
@@ -21,7 +22,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
   setOpen,
   orderType,
   currentPrice,
-
+  updateOrderBook,
   formData,
   setFormData,
 }) => {
@@ -60,7 +61,8 @@ const OrderModal: React.FC<OrderModalProps> = ({
         toast.dismiss(loading);
         toast.success(res.data.message, {
           autoClose: 2000
-        })
+        });
+        updateOrderBook();
       }
     } catch (error: any) {
       toast.dismiss(loading);

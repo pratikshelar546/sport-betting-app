@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors'
-import { errorHandler } from './middleware/errorHandler';
-import userRoutes from "./modules/user/route";
-import assetRoute from "./modules/assets/route";
-import transactionRoute from "./modules/transaction/route";
+import { errorHandler } from './middleware/errorHandler.js';
+import userRoutes from "./modules/user/route.js";
+import assetRoute from "./modules/assets/route.js";
+import transactionRoute from "./modules/transaction/route.js";
 import dotenv from 'dotenv';
 const app = express();
 

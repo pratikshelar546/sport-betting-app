@@ -2,7 +2,7 @@
   "name": "@repo/database",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.ts",
   "exports": {
     "./client": "./src/index.ts",
     ".": "./src/index.ts"
@@ -19,9 +19,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@prisma/client": "5.22.0",
-    "dotenv": "^16.5.0"
+    "dotenv": "^16.5.0",
+    "redis": "^5.10.0"
   }
 }

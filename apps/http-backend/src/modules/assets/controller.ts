@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import { addAsset, fetchOrderBook, getAssetDetails } from "./service";
-import { Asset } from "./types";
-import { AppError } from "../../utlis/AppError";
-import { User } from "../user/types";
+import { addAsset, fetchCandleData, fetchOrderBook, getAssetDetails } from "./service.js";
+import { Asset } from "./types.js";
+import { AppError } from "../../utlis/AppError.js";
+import { User } from "../user/types.js";
+import axios from "axios";
 
 export const createAsset = async (
   req: Request,
@@ -37,8 +38,8 @@ export const getAsset = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    const { id }: { id?: string } = req.params;
-    const getAssetDeatils: any = await getAssetDetails({ id: id as string });
+    const { symbol }: { symbol?: string } = req.params;
+    const getAssetDeatils: any = await getAssetDetails({ symbol: symbol as string });
 
     return res.status(200).json({
       message: "Fetched asset deatils",
@@ -53,11 +54,11 @@ export const getAsset = async (
 
 export const getAssetOrderBook = async (req:Request,res:Response,next:NextFunction) :Promise<any>=>{
   try {
-    const { id } = req.params;
-    if (!id) throw new AppError("Asset id is required", 400);
+    const { symbol } = req.params;
+    if (!symbol) throw new AppError("Asset symbol is required", 400);
 
     const orderBook = await fetchOrderBook({
-      id,
+      symbol,
     })
     return res.status(200).json({
       message: "Fetched order book",
@@ -68,5 +69,31 @@ export const getAssetOrderBook = async (req:Request,res:Response,next:NextFuncti
     console.log("error while getting order book by asset:",error);
     
     next(error)
+  }
+}
+
+
+export const getCandleData = async (req:Request,res:Response,next:NextFunction) :Promise<any>=>{
+  try {
+const {symbol,exchange,interval,fromDate,toDate} = req.query;    
+if(!symbol || !exchange || !fromDate || !toDate) throw new AppError("All fields are required", 400);
+
+const candleData = await fetchCandleData({
+  symboltoken: symbol as string,
+  exchange: exchange as string,
+  interval: interval as string,
+  fromDate: fromDate as string,
+  toDate: toDate as string
+});
+
+return res.status(200).json({
+  message: "Fetched candle data",
+  success: true,
+  data: candleData,
+});
+  } catch (error) {
+    console.log("error while getting candle data",error);
+    
+    next(error);
   }
 }

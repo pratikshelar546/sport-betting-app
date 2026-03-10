@@ -29,6 +29,9 @@ const HeroSection = () => {
                 Logout
               </p>
               <p className="cursor-pointer" onClick={() => router.push('/create-market')}>Create Market</p>
+              <p className="cursor-pointer" onClick={() => router.push('/portfolio')}>Portfolio</p>
+              <p className="cursor-pointer" onClick={() => router.push('/transactions')}>transactions</p>
+
             </>
           ) : (
             <>

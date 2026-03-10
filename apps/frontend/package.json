@@ -15,6 +15,8 @@
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",
+    "dayjs": "^1.11.19",
+    "lightweight-charts": "^5.1.0",
     "lucide-react": "^0.509.0",
     "next": "15.3.2",
     "next-auth": "^4.24.11",
@@ -25,8 +27,8 @@
     "tailwind-merge": "^3.2.0"
   },
   "devDependencies": {
-    "@repo/database": "workspace:*",
     "@eslint/eslintrc": "^3",
+    "@repo/database": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

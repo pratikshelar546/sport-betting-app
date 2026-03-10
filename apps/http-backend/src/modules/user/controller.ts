@@ -3,10 +3,10 @@
 // routes will be wrriten in index.ts
 
 import { NextFunction, Request, Response } from 'express';
-import { User } from "./types";
-import { addUser, findEmailAlreadyExist, findUserByPhoneNumber } from "./service";
-import { AppError } from "../../utlis/AppError";
-import { compareHashPassword, genrateJwtToken, hashPassword } from './utlis';
+import { User } from "./types.js";
+import { addUser, findEmailAlreadyExist, findUserByPhoneNumber } from "./service.js";
+import { AppError } from "../../utlis/AppError.js";
+import { compareHashPassword, genrateJwtToken, hashPassword } from './utlis.js';
 
 export const createUser = async (
   req: Request,

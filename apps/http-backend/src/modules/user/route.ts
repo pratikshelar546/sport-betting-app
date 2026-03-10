@@ -1,6 +1,6 @@
 // routes/index.ts
 import express, { Router } from "express";
-import { createUser, loginUser } from "./controller";
+import { createUser, loginUser } from "./controller.js";
 
 const router: Router = express.Router();
 

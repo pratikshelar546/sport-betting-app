@@ -2,20 +2,33 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { server } from "@/utlis/server";
+import dayjs from "dayjs";
+import { CandlestickSeries, ColorType, createChart } from 'lightweight-charts';
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import OrderModal from "./OrderModal";
+import { useEffect, useRef, useState } from "react";
 import OrderBook from "./OrderBook";
+import OrderModal from "./OrderModal";
 import Tab from "./Tab";
 export interface Asset {
-  title: string,
-  image?: string,
-  maxPrice: number,
-  id: string,
-  buyPriceYes: number,
-  buyPriceNo: number,
-  sellPriceYes: number,
-  sellPriceNo: number
+  symbol: string;
+  exch_seg: string;
+  token: string;
+}
+export interface OrderBookEntry {
+  id: string;
+  type: string;
+  qty: number;
+  remainingQty: number;
+  price: number;
+  method: string;
+  executed: boolean;
+  createdAt: string;
+}
+
+type candleStickData = [string, number, number, number, number, number];
+
+interface chartComponent {
+  rawData: candleStickData[];
 }
 const AssetDetails = () => {
   const { id } = useParams();
@@ -31,6 +44,151 @@ const AssetDetails = () => {
     type: "",
     qty: NaN,
   });
+  const [orders, setOrders] = useState<OrderBookEntry[]>([]);
+  const [candles,setCandles] = useState<any[]>([]);
+  const [loadingCandleData,setLoadingCandleData] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartInstance = useRef<any>(null);
+  const seriesRef = useRef<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAtEnd, setIsAtEnd] = useState(false);
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+
+
+useEffect(() => {
+  if (!chartContainerRef.current || !candles.length ) return;
+
+  // 1. Initialize the Chart
+  const chart = createChart(chartContainerRef.current, {
+    layout: {
+      background: { type: ColorType.Solid, color: 'black' },
+      textColor: 'white',
+    },
+    width: chartContainerRef.current.clientWidth,
+    height: 400,
+    timeScale: {
+      timeVisible: true, // Required for intraday (minute/hour) data
+      secondsVisible: true,
+      tickMarkFormatter: (time: number) => {
+        const date = new Date(time * 1000);
+        return new Intl.DateTimeFormat('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }).format(date);
+      },
+    },
+    localization: {
+      timeFormatter: (time:any) => {
+        // This ensures the labels on the axis look correct
+        return new Date(time * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      },
+    },
+  });
+
+  chartInstance.current = chart;
+
+  // 2. Add the Candlestick Series
+  const candlestickSeries = chart.addSeries(CandlestickSeries, {
+    upColor: '#26a69a',
+    downColor: '#ef5350',
+    borderVisible: false,
+    wickUpColor: '#26a69a',
+    wickDownColor: '#ef5350',
+  });
+
+  chartInstance.current = chart;
+  seriesRef.current = candlestickSeries;
+
+  // Cleanup
+  return () => chart.remove();
+  // 3. Transform Angel One Data
+  // Angel One format: [timestamp, open, high, low, close, volume]
+  // const formattedData = candles.map((c) => ({
+  //   time: toUnixSeconds(c.timestamp) as any, // Send raw UTC
+  //   open: c.open,
+  //   high: c.high,
+  //   low: c.low,
+  //   close: c.close,
+  // }));
+
+  // // 4. Inject Data into the Series
+  // candlestickSeries.setData(formattedData);
+  // chart.timeScale().fitContent();
+  // // 5. Cleanup function on unmount
+  // return () => {
+  //   chart.remove();
+  // };
+}, [candles.length > 0]); // Re-run if data changes
+
+
+useEffect(() => {
+  if (seriesRef.current && candles.length > 0) {
+    const timeScale = chartInstance.current.timeScale();
+    
+    // 1. Capture where the user is looking BEFORE the update
+    const logicalRange = timeScale.getVisibleLogicalRange();
+    
+    const formattedData = candles.map((c: any) => ({
+      time: Math.floor(new Date(c.timestamp).getTime() / 1000) as any,
+      open: c.open, high: c.high, low: c.low, close: c.close,
+    }));
+    
+    seriesRef.current.setData(formattedData);
+
+    // 2. If this was a historical prepend, restore the position
+    if (logicalRange !== null) {
+       // This math keeps the bars under the user's cursor from moving
+       // when new data is added to the left.
+       // timeScale.scrollToLogicalRange(logicalRange); 
+    }
+  }
+}, [candles]);
+
+useEffect(() => {
+  if (!chartInstance.current) return;
+
+  // Debounce implementation for handleScroll
+  let debounceTimer: NodeJS.Timeout | null = null;
+  const DEBOUNCE_DELAY = 500; // ms
+
+  const handleScroll = (newVisibleRange: any) => {
+    if (!newVisibleRange) return;
+
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(() => {
+      // Logical range < 10 means the user is within 10 bars of the left edge
+      console.log(newVisibleRange,"newVisibleRange",isLoading, isAtEnd);
+      
+      if (newVisibleRange.from < 10 && !isLoading && !isAtEnd) {
+        const oldestCandle = candles[0];
+        if (oldestCandle) {
+          // We want data BEFORE the oldest candle we have
+          const toDate = dayjs(oldestCandle.timestamp).subtract(1, 'minute').format("YYYY-MM-DD HH:mm");
+          const newFromDate = dayjs(oldestCandle.timestamp).subtract(5, 'days').format("YYYY-MM-DD HH:mm");
+          setFromDate(newFromDate);
+          setToDate(toDate);
+          const prevDay315 = dayjs(fromDate).subtract(1, 'day').set('hour', 15).set('minute', 15).format("YYYY-MM-DD HH:mm");
+          fetchCandleData(newFromDate, prevDay315);
+        }
+      }
+    }, DEBOUNCE_DELAY);
+  };
+
+  chartInstance.current.timeScale().subscribeVisibleLogicalRangeChange(handleScroll);
+
+  return () => {
+    chartInstance.current?.timeScale().unsubscribeVisibleLogicalRangeChange(handleScroll);
+    if (debounceTimer) clearTimeout(debounceTimer);
+  };
+}, [candles, isLoading, isAtEnd]);
+console.log(fromDate, toDate,"from date and to date -------------------");
 
   const getData = async () => {
     setLoading(true);
@@ -45,6 +203,42 @@ const AssetDetails = () => {
     }
   };
 
+  const fetchOrders = async () => { 
+    if (!asset?.token) return;
+    setLoadingOrders(true);
+    try {
+      const res = await server.get(`/asset/getorderbook/${asset?.token}`);
+      setOrders(res.data?.data ?? []);
+    } catch {
+      setError("Failed to load order book");
+      setOrders([]);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  const fetchCandleData = async (fromDate:string, toDate:string) => {
+    console.log("fetching candle data");
+    console.log("-------------------",fromDate, toDate,"------------------- ");
+    
+    setIsLoading(true);
+    if (!asset?.token) return;
+    setLoadingCandleData(true);
+    try {
+      const res = await server.get(`/asset/getCandleData?symbol=${asset?.token}&exchange=${asset?.exch_seg}&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`);
+      setCandles([...res.data.data,...candles])
+      
+    } catch {
+      setError("Failed to load candle data");
+      setCandles([]);
+    } finally {
+      setLoadingCandleData(false);
+      setIsLoading(false);
+      // setIsAtEnd(true);
+    }
+  };
+console.log(candles.length,"candles length -------------------");
+
   useEffect(() => {
     if (orderType === "Buy") {
 
@@ -53,8 +247,42 @@ const AssetDetails = () => {
 
   useEffect(() => {
     getData();
+    fetchOrders();
+    
     // eslint-disable-next-line
   }, [id]);
+
+  useEffect(()=>{
+    if(asset){
+
+      // Handle market session - if before market open (9:15), use yesterday's session
+      const now = dayjs();
+      const marketOpen = now.set('hour', 9).set('minute', 15).set('second', 0).set('millisecond', 0);
+      const marketClose = now.set('hour', 15).set('minute', 15).set('second', 0).set('millisecond', 0);
+
+      let fromDate: string;
+      let toDate: string;
+
+      if (now.isBefore(marketOpen)) {
+        // Before market opens, use previous day's session
+        const yesterday = now.subtract(1, 'day');
+        const prevMarketOpen = yesterday.set('hour', 9).set('minute', 15).set('second', 0).set('millisecond', 0);
+        const prevMarketClose = yesterday.set('hour', 15).set('minute', 15).set('second', 0).set('millisecond', 0);
+        fromDate = prevMarketOpen.format("YYYY-MM-DD HH:mm");
+        toDate = prevMarketClose.format("YYYY-MM-DD HH:mm");
+      } else {
+        // After market open today, use today's session up to now or close time
+        fromDate = marketOpen.format("YYYY-MM-DD HH:mm");
+        toDate = now.isAfter(marketClose) ? marketClose.format("YYYY-MM-DD HH:mm") : now.format("YYYY-MM-DD HH:mm");
+      }
+
+      setFromDate(fromDate);
+      setToDate(toDate);
+      if(fromDate && toDate){
+        fetchCandleData(fromDate, toDate);
+      }
+    }
+  },[asset])
 
   if (loading) {
     return (
@@ -73,7 +301,7 @@ const AssetDetails = () => {
   if (!asset) return null;
 
   // Use dummy image if asset.image is missing
-  const imageSrc = asset.image || "/window.jpeg";
+  // const imageSrc = asset.image || "/window.jpeg";
 
   const handleBuyOrder = (type: string) => {
     setOrderType("Buy");
@@ -92,156 +320,160 @@ const AssetDetails = () => {
     }));
     setOpenModal(true);
   };
-
   return (
-    <div className="flex flex-col md:flex-row min-h-[80vh] bg-neutral-900 w-full px-4 py-8 gap-6 md:gap-8">
-      {/* Left: Asset details + Order book (scrollable) */}
+    <div className="flex flex-col md:flex-row min-h-[80vh] bg-neutral-950 w-full px-4 py-6 md:py-8 gap-6 md:gap-8 mt-16 md:mt-20 max-w-7xl mx-auto">
+      {/* Left: Asset details + Order book */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <div className="flex flex-col items-center md:items-start bg-neutral-800 rounded-xl shadow-lg p-8 border border-neutral-700 w-full max-w-xl">
-          <img
-            src={imageSrc}
-            alt={asset.title}
-            className="w-40 h-40 object-cover rounded-lg border border-neutral-700 shadow mb-6 bg-neutral-700"
-          />
-          <h2 className="text-3xl font-bold text-white mb-4 text-center md:text-left">
-            {asset.title}
-          </h2>
-          <div className="flex flex-col gap-3 w-full">
-            <div className="flex justify-between text-lg text-neutral-300">
-              <span>Current Price:</span>
-              <span className="font-semibold text-green-400">
-                ₹{asset.maxPrice}
-              </span>
-            </div>
-            <div className="flex justify-between text-lg text-neutral-300">
-              <span>Max Price:</span>
-              <span className="font-semibold text-blue-400">
-                ₹{asset.maxPrice}
-              </span>
-            </div>
-          </div>
+        {/* Asset card */}
+        <div className="flex flex-col items-center md:items-start bg-neutral-800/80 rounded-2xl p-6 md:p-8 border border-neutral-700/80 shadow-xl shadow-black/20 w-full">
+        <div ref={chartContainerRef} style={{ width: '100%', height: '400px',minWidth: '500px', maxWidth: '1000px' }} />
         </div>
-        <div className="w-full max-w-xl mt-4 flex-1 min-h-0 flex flex-col">
-          <OrderBook assetId={asset.id} />
+
+        {/* Order book */}
+        <div className="w-full mt-5 flex-1 min-h-0 flex flex-col">
+          {
+            loadingOrders ? (
+                  <div className="rounded-xl border border-neutral-700 bg-neutral-800 p-6 text-center text-neutral-400">
+                    Loading order book…
+                  </div>
+            ) : (
+              orders.length > 0 ? (
+                <OrderBook orders={orders} />
+              ) : (
+                <div className="rounded-xl border border-neutral-700 bg-neutral-800 p-6 text-center text-neutral-400">
+                  No orders
+                </div>
+              )
+            )
+          }
         </div>
       </div>
 
-      {/* Right: Buy/Sell panel (sticky) */}
-      <div className="w-full md:w-auto md:max-w-md shrink-0 md:sticky md:top-8 md:self-start flex flex-col bg-neutral-800 rounded-xl shadow-lg p-8 border border-neutral-700 gap-6">
-        <Tab
-          tabs={["Buy", "Sell"]}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-        <div>
-          <div className="flex flex-row gap-4 justify-center items-center">
-
-          <Input
-            type="text"
-            label="Price (₹)"
-            value={formData.price || ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              // Only allow numbers and decimal points
-              if (/^\d*\.?\d*$/.test(value) || value === "") {
-                setFormData({
-                  ...formData,
-                  price: value === "" ? NaN : parseFloat(value),
-                });
-              }
-            }}
-            onWheel={(e) => e.currentTarget.blur()}
-            placeholder="Enter price"
-            className="w-full"
-            required
-          />
-<Input
-            type="text"
-            label="Quantity"
-            value={formData.qty || ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              // Only allow numbers and decimal points
-              if (/^\d*\.?\d*$/.test(value) || value === "") {
-                setFormData({
-                  ...formData,
-                  qty: value === "" ? NaN : parseFloat(value),
-                });
-              }
-            }}
-            placeholder="Enter quantity"
-            className="w-full"
-            required
-          />
-  
+      {/* Right: Trade panel (sticky) */}
+      <div className="w-full md:w-[480px] shrink-0 md:sticky md:top-24 md:self-start">
+        <div className="bg-neutral-800/80 rounded-2xl border border-neutral-700/80 shadow-xl shadow-black/20 overflow-hidden">
+          <div className="px-5 py-4 border-b border-neutral-700/80">
+            <h2 className="text-lg font-semibold text-white">Place order</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Buy or sell Yes/No at current prices
+            </p>
           </div>
-          <p className="text-sm text-neutral-400 mt-1">
-            Current price: ₹{asset?.maxPrice}
-          </p>
+          <div className="p-5 space-y-5">
+            <Tab
+              tabs={["Buy", "Sell"]}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  type="text"
+                  label="Price (₹)"
+                  value={formData.price || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^\d*\.?\d*$/.test(value) || value === "") {
+                      setFormData({
+                        ...formData,
+                        price: value === "" ? NaN : parseFloat(value),
+                      });
+                    }
+                  }}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  placeholder="0"
+                  className="w-full"
+                  required
+                />
+                <Input
+                  type="text"
+                  label="Quantity"
+                  value={formData.qty || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^\d*\.?\d*$/.test(value) || value === "") {
+                      setFormData({
+                        ...formData,
+                        qty: value === "" ? NaN : parseFloat(value),
+                      });
+                    }
+                  }}
+                  placeholder="0"
+                  className="w-full"
+                  required
+                />
+              </div>
+              <p className="text-xs text-neutral-500">
+                Reference: ₹{asset?.maxPrice}
+              </p>
+            </div>
+
+            {activeTab === "Buy" && (
+              <div className="space-y-4 pt-1">
+                <h3 className="text-sm font-medium text-neutral-400">
+                  Place your bet (Buy)
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    label={`Yes ₹${asset?.buyPriceYes}`}
+                    variant="primary"
+                    className="w-full"
+                    onClick={() => {
+                      handleBuyOrder("yes");
+                      setCurrentPrice(asset?.buyPriceYes);
+                    }}
+                  />
+                  <Button
+                    label={`No ₹${asset?.buyPriceNo}`}
+                    variant="outlined"
+                    className="w-full"
+                    onClick={() => {
+                      handleBuyOrder("no");
+                      setCurrentPrice(asset?.buyPriceNo);
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-neutral-500 text-center">
+                  Will this reach max price?
+                </p>
+              </div>
+            )}
+            {activeTab === "Sell" && (
+              <div className="space-y-4 pt-1">
+                <h3 className="text-sm font-medium text-neutral-400">
+                  Place your bet (Sell)
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    label={`Yes ₹${asset.sellPriceYes}`}
+                    variant="primary"
+                    className="w-full"
+                    onClick={() => {
+                      handleSellOrder("yes");
+                      setCurrentPrice(asset.sellPriceYes);
+                    }}
+                  />
+                  <Button
+                    label={`No ₹${asset.sellPriceNo}`}
+                    variant="outlined"
+                    className="w-full"
+                    onClick={() => {
+                      handleSellOrder("no");
+                      setCurrentPrice(asset.sellPriceNo);
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-neutral-500 text-center">
+                  Sell if it reaches max price?
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-        {activeTab === "Buy" && (
-          <>
-            <h3 className="text-2xl font-semibold text-white mb-4 text-center">
-              Place Your Bet (Buy)
-            </h3>
-            <div className="flex flex-row gap-6 w-full justify-center">
-              <Button
-                label={`Buy Yes ₹${asset?.buyPriceYes}`}
-                variant="primary"
-                className="w-full text-lg"
-                onClick={() => {
-                  handleBuyOrder("yes");
-                  setCurrentPrice(asset?.buyPriceYes);
-                }}
-              />
-              <Button
-                label={`Buy No ₹${asset?.buyPriceNo}`}
-                variant="outlined"
-                className="w-full text-lg"
-                onClick={() => {
-                  handleBuyOrder("no");
-                  setCurrentPrice(asset?.buyPriceNo)
-                }}
-              />
-            </div>
-            <p className="text-neutral-400 text-center mt-6">
-              Will this asset reach its max price?
-            </p>
-          </>
-        )}
-        {activeTab === "Sell" && (
-          <>
-            <h3 className="text-2xl font-semibold text-white mb-4 text-center">
-              Place Your Bet (Sell)
-            </h3>
-            <div className="flex flex-row gap-6 w-full justify-center">
-              <Button
-                label={`Sell Yes ₹${asset.sellPriceYes}`}
-                variant="primary"
-                className="w-full text-lg"
-                onClick={() => {
-                  handleSellOrder("yes");
-                  setCurrentPrice(asset.sellPriceYes);
-                }}
-              />
-              <Button
-                label={`Sell No ₹${asset.sellPriceNo}`}
-                variant="outlined"
-                className="w-full text-lg"
-                onClick={() => {
-                  handleSellOrder("no");
-                  setCurrentPrice(asset.sellPriceNo);
-                }}
-              />
-            </div>
-            <p className="text-neutral-400 text-center mt-6">
-              Do you want to sell if it reaches max price?
-            </p>
-          </>
-        )}
       </div>
 
       <OrderModal
+      updateOrderBook={fetchOrders}
         open={openModal}
         setOpen={setOpenModal}
         orderType={orderType}

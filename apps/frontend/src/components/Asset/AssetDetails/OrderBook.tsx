@@ -1,47 +1,23 @@
 "use client";
 
-import { server } from "@/utlis/server";
-import { useEffect, useState } from "react";
-
-export interface OrderBookEntry {
-  id: string;
-  type: string;
-  qty: number;
-  price: number;
-  method: string;
-  executed: boolean;
-  createdAt: string;
-}
+import { OrderBookEntry } from "./AssetDetails";
 
 interface OrderBookProps {
-  assetId: string;
+  orders: OrderBookEntry[];
 }
 
-const OrderBook = ({ assetId }: OrderBookProps) => {
-  const [orders, setOrders] = useState<OrderBookEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const OrderBook = ({ orders }: OrderBookProps) => {
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      if (!assetId) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await server.get(`/asset/getorderbook/${assetId}`);
-        setOrders(res.data?.data ?? []);
-      } catch {
-        setError("Failed to load order book");
-        setOrders([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrders();
-  }, [assetId]);
 
-  const buyOrders = orders.filter((o) => o.method?.toLowerCase() === "buy");
-  const sellOrders = orders.filter((o) => o.method?.toLowerCase() === "sell");
+  const ORDER_BOOK_LIMIT = 7;
+  const buyOrders = orders
+    .filter((o) => o.method?.toLowerCase() === "buy")
+    .sort((a, b) => b.price - a.price)
+    .slice(0, ORDER_BOOK_LIMIT);
+  const sellOrders = orders
+    .filter((o) => o.method?.toLowerCase() === "sell")
+    .sort((a, b) => a.price - b.price)
+    .slice(0, ORDER_BOOK_LIMIT);
 
   const TableSection = ({
     title,
@@ -60,7 +36,7 @@ const OrderBook = ({ assetId }: OrderBookProps) => {
       >
         {title}
       </h3>
-      <div className="rounded-lg border border-neutral-700 overflow-hidden bg-neutral-900/80 max-h-52 overflow-y-auto">
+      <div className="rounded-lg border border-neutral-700 overflow-hidden bg-neutral-900/80">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-neutral-700 bg-neutral-800/90 text-neutral-400">
@@ -85,7 +61,7 @@ const OrderBook = ({ assetId }: OrderBookProps) => {
                 >
                   <td className="py-2 px-3 font-medium capitalize">{order.type}</td>
                   <td className="py-2 px-3 text-white">₹{order.price}</td>
-                  <td className="py-2 px-3">{order.qty}</td>
+                  <td className="py-2 px-3">{order.remainingQty}</td>
                   <td className="py-2 px-3 hidden sm:table-cell text-neutral-500">
                     {new Date(order.createdAt).toLocaleTimeString(undefined, {
                       hour: "2-digit",
@@ -101,26 +77,15 @@ const OrderBook = ({ assetId }: OrderBookProps) => {
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="rounded-xl border border-neutral-700 bg-neutral-800 p-6 text-center text-neutral-400">
-        Loading order book…
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-xl border border-neutral-700 bg-neutral-800 p-6 text-center text-rose-400">
-        {error}
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-xl border border-neutral-700 bg-neutral-800 shadow-lg overflow-hidden flex flex-col h-full min-h-0">
       <div className="px-4 py-3 border-b border-neutral-700 bg-neutral-800/90 shrink-0">
-        <h2 className="text-lg font-semibold text-white">Order Book</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Order Book</h2>
+          <span className="text-[10px] uppercase tracking-wider text-neutral-500">
+            Top 7
+          </span>
+        </div>
         <p className="text-xs text-neutral-400 mt-0.5">Live orders for this asset</p>
       </div>
       <div className="p-4 flex-1 min-h-0 overflow-auto">

@@ -2,14 +2,13 @@ import { getAllAsset } from "@/action/asset";
 import { authOptions } from "@/lib/authHandler";
 import { getServerSession } from "next-auth";
 import React from "react";
-import AssetCard, { asset } from "./AssetCard";
+import AssetCard, { Stocks } from "./AssetCard";
 
 const AssetList = async () => {
   const session = await getServerSession(authOptions);
 
 
-  const assets: asset[] = await getAllAsset();
-  console.log(assets, "assets");
+  const assets: Stocks[] = await getAllAsset();
 
   if (!assets) return (
     <div>
@@ -18,7 +17,7 @@ const AssetList = async () => {
   )
   return (
     <>
-      <div className="grid grid-cols-5 gap-5">
+      <div className="grid grid-cols-3 gap-5 mt-18">
         {assets?.map((asset, id) => {
           return <AssetCard asset={asset} key={id} />;
         })}

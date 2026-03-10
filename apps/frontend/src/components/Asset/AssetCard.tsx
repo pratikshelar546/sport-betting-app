@@ -1,9 +1,6 @@
 "use client";
-import useModal from "@/hooks/useModal";
 import Image from "next/image";
-import { useState } from "react";
 import { Button } from "../ui/Button";
-import PlaceOrderModal from "./PlaceOrderModal";
 import { useRouter } from "next/navigation";
 
 export interface asset {
@@ -15,35 +12,62 @@ export interface asset {
   userId?: string;
 }
 
-const AssetCard = ({ asset }: { asset: asset }) => {
+export interface Stocks {
+  id: string;
+  name: string;
+  symbol: string;
+  lotsize: number;
+  token: string;
+  exch_seg: string;
+}
+
+const AssetCard = ({ asset }: { asset: Stocks }) => {
   const router = useRouter();
+
   return (
-    <>
-      <div
-        className="flex flex-col px-4 py-3 bg-transparent border border-neutral-500 text-white gap-8 cursor-pointer"
-        onClick={() => {
-          router.push(`/assetDetails/${asset.id}`);
-        }}
-      >
-        <div className="flex gap-2">
-          {asset.image && <Image src={asset.image} alt={asset.title} />}
-          <h1 className="text-white text-xl">{asset.title}</h1>
+    <div
+      className="max-w-4xl w-full flex flex-col justify-between px-6 py-5 bg-neutral-900 border border-neutral-700 rounded-xl shadow text-white gap-4 transition duration-200 hover:shadow-lg hover:border-neutral-400 cursor-pointer"
+      onClick={() => {
+        router.push(`/assetDetails/${asset.symbol}`);
+      }}
+    >
+      <div className="flex items-center gap-3">
+        {/* Simple colored placeholder for symbol */}
+        <div className="h-11 w-11 flex items-center justify-center rounded-md bg-neutral-800 border border-neutral-600">
+          <span className="text-base font-bold text-neutral-200">
+            {asset.symbol.slice(0, 3)}
+          </span>
         </div>
-        <div className="flex flex-2 gap-4 justify-center items-center">
+        <div>
+          <h1 className="text-white text-lg font-semibold">{asset.name}</h1>
+          <p className="text-neutral-400 text-xs uppercase tracking-wide">{asset.symbol}</p>
+        </div>
+      </div>
+      <div className="flex flex-row gap-8 items-center justify-between mt-4">
+        <div className="flex flex-col">
+          <span className="text-xs text-neutral-500">Lot size</span>
+          <span className="text-base font-medium text-neutral-300">{asset.lotsize}</span>
+        </div>
+        <div className="flex flex-row gap-3">
           <Button
-            className="text-white text-lg px-6 py-1  bg-green-400 hover:bg-emerald-300"
+            className="px-5 py-1.5 text-sm font-medium bg-neutral-800 hover:bg-neutral-700 text-white rounded transition"
             size="sm"
             label="Buy Yes"
+            onClick={e => e.stopPropagation()}
           />
 
           <Button
-            className="text-white text-lg px-6 py-1  bg-red-400 hover:bg-red-300"
+            className="px-5 py-1.5 text-sm font-medium bg-neutral-800 hover:bg-neutral-700 text-white rounded transition"
             size="sm"
             label="Buy No"
+            onClick={e => e.stopPropagation()}
           />
         </div>
       </div>
-    </>
+      <div className="flex justify-end mt-2">
+        <span className="text-xs text-neutral-500 italic">{asset.exch_seg}</span>
+      </div>
+    </div>
   );
 };
 

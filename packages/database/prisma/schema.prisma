@@ -85,3 +85,29 @@ model Otp {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
 }
+
+model Stocks {
+  id String @id @default(uuid())
+  name String
+  symbol String
+  lotsize Int
+  token String
+  exch_seg String
+  stock_candle_data stock_candle_data[]
+}
+
+model stock_candle_data {
+  id String @id @default(uuid())
+  timestamp DateTime
+  open Float
+  high Float
+  low Float
+  close Float
+  volume Int
+  exchange String
+  symboltoken String
+  stockId String
+  stock Stocks @relation(fields: [stockId], references: [id])
+  @@unique([stockId, timestamp])    // to ensure we did not store duplicate data
+  @@index([timestamp(sort: Desc)]) // to ensure we can query the data quickly
+}

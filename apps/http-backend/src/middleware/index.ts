@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { AppError } from "../utlis/AppError";
+import { AppError } from "../utlis/AppError.js";
 import jwt from "jsonwebtoken";
 const jwtSecret = process.env.JWT_TOKEN || "thisistoken";
 

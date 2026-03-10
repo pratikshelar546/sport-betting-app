@@ -1,6 +1,6 @@
 import express, { Router } from "express";
-import { authenticateUser } from "../../middleware/index";
-import { placeOrder } from "./controller";
+import { authenticateUser } from "../../middleware/index.js";
+import { placeOrder } from "./controller.js";
 
 const router: Router = express.Router();
 router.get("/", (req,res) => {

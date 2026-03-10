@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { User } from "../user/types";
-import { AppError } from "../../utlis/AppError";
-import { executeOrder, placeOrderService } from "./service";
+import { User } from "../user/types.js";
+import { AppError } from "../../utlis/AppError.js";
+import { executeOrder, placeOrderService } from "./service.js";
 console.log("dd");
 
 export const placeOrder = async (
@@ -24,24 +24,27 @@ export const placeOrder = async (
       price,
       userId: id,
       assetId,
-      method
+      method,
+      remainingQty:qty
     });
 
-    const {success,message} = await executeOrder({
+    const {success,fullyFiled,remaining,message} = await executeOrder({
       qty,
       price,
       type,
       method,
       assetId,
-      id:placedOrder.orderBookId
+      id:placedOrder.orderBookId,
+      remainingQty:qty
     })
 
     return res.status(200).json({
-      message: "Order placed successfully",
+      message: `Order placed successfully and ${message}`,
       success: true,
       orderId: placedOrder?.id,
       orderExecuted:success,
-      order_message:message
+      fullyFiled,
+      remaining
     });
   } catch (error) {
     console.log("Error while placing order", error);

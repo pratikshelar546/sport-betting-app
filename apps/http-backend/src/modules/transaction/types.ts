@@ -5,5 +5,6 @@ export interface Order {
   userId?: string;
   id?: string;
   assetId: string;
-  method: "Buy" | "Sell"
+  method: "Buy" | "Sell",
+  remainingQty: number
 }
