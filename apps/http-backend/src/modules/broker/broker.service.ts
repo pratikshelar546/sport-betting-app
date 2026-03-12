@@ -1063,7 +1063,7 @@ export const getCandlesFromBroker = async ({
   
 //     }
 if(response.data.status){
-    console.log("data found in broker",response.data.data.length);
+    console.log("data found in broker",response.data.data);
     
     return response.data.data;
     

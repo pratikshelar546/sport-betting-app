@@ -1,7 +1,8 @@
 "use client";
-import Image from "next/image";
 import { Button } from "../ui/Button";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { server } from "@/utlis/server";
 
 export interface asset {
   id: string;
@@ -21,7 +22,22 @@ export interface Stocks {
   exch_seg: string;
 }
 
-const AssetCard = ({ asset }: { asset: Stocks }) => {
+const AssetCard = ({ asset,userToken }: { asset: Stocks,userToken:string }) => {
+console.log(userToken,"userToken");
+  const watchListStock = async () => {
+    try {
+      const res = await server.get(`/asset/watchlist/${asset.token}`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+      if(res.data && res.data.success) {
+        toast.success("Stock watched successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to watch stock");
+    }
+  }
   const router = useRouter();
 
   return (
@@ -64,8 +80,18 @@ const AssetCard = ({ asset }: { asset: Stocks }) => {
           />
         </div>
       </div>
-      <div className="flex justify-end mt-2">
+      {/* Watchlist Button */}
+      <div className="flex flex-row justify-end mt-2 gap-2">
         <span className="text-xs text-neutral-500 italic">{asset.exch_seg}</span>
+        <Button
+          className="px-4 py-1 text-xs font-medium bg-blue-700 hover:bg-blue-600 text-white rounded transition"
+          size="sm"
+          label="Watchlist"
+          onClick={e => {
+            e.stopPropagation();
+            watchListStock();
+          }}
+        />
       </div>
     </div>
   );

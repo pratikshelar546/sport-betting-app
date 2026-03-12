@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { addAsset, fetchCandleData, fetchOrderBook, getAssetDetails } from "./service.js";
+import { addAsset, fetchCandleData, fetchOrderBook, getAssetDetails, watchListStockService } from "./service.js";
 import { Asset } from "./types.js";
 import { AppError } from "../../utlis/AppError.js";
 import { User } from "../user/types.js";
@@ -97,3 +97,32 @@ return res.status(200).json({
     next(error);
   }
 }
+
+
+export const watchListStock = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { token } = req.params;
+    if (!token) throw new AppError("Symbol token is required", 400);
+
+    const { id } = req.user as User;
+    if (!id) throw new AppError("Unauthorized", 401);
+
+    const watchListed = await watchListStockService({
+      token: token as string,
+      userId: id,
+    });
+    if (!watchListed) throw new AppError("Failed to watch stock", 400);
+
+    res.status(200).json({
+      message: "Stock watched successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.log("error while watching stock", error);
+    next(error);
+  }
+};

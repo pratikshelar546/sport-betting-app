@@ -19,7 +19,7 @@ const AssetList = async () => {
     <>
       <div className="grid grid-cols-3 gap-5 mt-18">
         {assets?.map((asset, id) => {
-          return <AssetCard asset={asset} key={id} />;
+          return <AssetCard asset={asset} key={id} userToken={session?.user.token as string} />;
         })}
       </div>
     </>

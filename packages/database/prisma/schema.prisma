@@ -1,5 +1,6 @@
 // prisma/schema.prisma
-
+// npx primsa migrate dev --name comments
+// npx prisma generate
 generator client {
   provider = "prisma-client-js"
 }
@@ -22,6 +23,7 @@ model User {
   transactions Transaction[]
   asset        Asset[]
   otp          Otp[]
+  watchList    watchList[]
 }
 
 model Orderbook {
@@ -94,6 +96,7 @@ model Stocks {
   token String
   exch_seg String
   stock_candle_data stock_candle_data[]
+  watchList watchList[]
 }
 
 model stock_candle_data {
@@ -107,7 +110,21 @@ model stock_candle_data {
   exchange String
   symboltoken String
   stockId String
+  interval String 
   stock Stocks @relation(fields: [stockId], references: [id])
   @@unique([stockId, timestamp])    // to ensure we did not store duplicate data
   @@index([timestamp(sort: Desc)]) // to ensure we can query the data quickly
+}
+
+
+model watchList {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  stockId String
+  stock Stocks @relation(fields: [stockId], references: [id])
+  isDeleted Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId, isDeleted(sort: Desc)])
 }

@@ -10,7 +10,7 @@ export const syncCandleToDb = async (allFetchedCandles: any) => {
     // Go straight to the insert.
     await prismaClient.$executeRaw`
       INSERT INTO "stock_candle_data" (
-        "id", "timestamp", "open", "high", "low", "close", "volume", "exchange", "symboltoken", "stockId"
+        "id", "timestamp", "open", "high", "low", "close", "volume", "exchange", "symboltoken", "stockId", "interval"
       )
       SELECT 
         gen_random_uuid(),
@@ -22,7 +22,8 @@ export const syncCandleToDb = async (allFetchedCandles: any) => {
         (val->>'volume')::bigint,
         val->>'exchange',
         val->>'symboltoken',
-        val->>'stockId'
+        val->>'stockId',
+        val->>'interval'
       FROM json_array_elements(${JSON.stringify(allFetchedCandles)}::json) AS val
       ON CONFLICT ("stockId", "timestamp") DO NOTHING;
     `;

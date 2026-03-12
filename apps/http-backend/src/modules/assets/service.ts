@@ -34,7 +34,7 @@ export const addAsset = async ({
   }
 };
 
-export const getAssetDetails = async ({ symbol,token }: { symbol: string | undefined,token?:string | undefined  }): Promise<any> => {
+export const getAssetDetails = async ({ symbol,token }: { symbol?: string | undefined,token?:string | undefined  }): Promise<any> => {
   try {
     const getAssetDetails = await prismaClient.stocks.findFirst({
       where: {
@@ -67,6 +67,8 @@ export const fetchOrderBook = async ({ symbol }: { symbol: string }) => {
     throw error;
   }
 };
+
+
 
 export const fetchCandleData = async ({
   exchange,
@@ -117,7 +119,6 @@ console.log(fromDateObj,toDateObj,"from date and to date");
         needsBrokerFetch = true;
     }
 
-    console.log(needsBrokerFetch,"needs broker fetch");
     
 let finalData = candleData;
     if (!candleData || candleData.length === 0 || needsBrokerFetch) {
@@ -132,9 +133,6 @@ let finalData = candleData;
 
       // Only if we got data, transform and save to DB (idempotent insert)
       if (brokerCandles && brokerCandles.length > 0) {
-        console.log(brokerCandles[0],"testtttttt");
-        
-        console.log(dayjs(brokerCandles[0]?.[0]).toDate(),"brokerCandles[0].candle[0]");
         
         const dbCandles = brokerCandles.map((candle: any) => ({
           timestamp: dayjs(candle[0]).toDate(),
@@ -146,17 +144,70 @@ let finalData = candleData;
           exchange,
           symboltoken,
           stockId: asset.id,
+          interval,
         }));
         // Save to DB (helper should handle dupes)
        syncCandleToDb(dbCandles);
         finalData = dbCandles;
       }
     }
-    return finalData;
+    return true;
   } catch (error) {
     throw error;
   }
 }
+
+export const watchListStockService = async ({
+  token,
+  userId}:{
+    token:string,
+    userId:string,
+  }):Promise<any>=>{
+  try {
+  const stock = await getAssetDetails({
+    token:token as string
+  });
+  if(!stock) throw new AppError("Stock not found", 404);
+
+  const findAlreadyWatching = await prismaClient.watchList.findFirst({
+    where:{
+      userId,
+      stockId:stock.id,
+    }
+  })
+  if(findAlreadyWatching) throw new AppError("Stock already in watchlist", 400);
+
+  const addToWatcchList = await prismaClient.watchList.create({
+    data:{
+      userId,
+      stockId:stock.id,
+    }
+  })
+
+
+  // Get the date two years ago from today in YYYY-MM-DD format
+  const pastTwoYearDate = dayjs().subtract(2, "year").format("YYYY-MM-DD HH:mm");
+  const todaysDate = dayjs().format("YYYY-MM-DD HH:mm");
+
+  const candleData = await fetchCandleData({
+    exchange:stock.exch_seg,
+    symboltoken:stock.token,
+    interval:"ONE_DAY",
+    fromDate:pastTwoYearDate,
+    toDate:todaysDate,
+  })
+
+ return true;
+  
+
+  } catch (error) {
+    console.log("error while watching stock",error);
+    
+    throw error;
+  }
+}
+
+
 const dumpStocks = async()=>{
   try {
 
@@ -208,7 +259,14 @@ const dumpStocks = async()=>{
 
 
 
-(async()=>{
+// (async()=>{
+//   console.log("running dump stocks");
+//   const data = await fetchCandleData({
+//   exchange:"NSE",
+//   symboltoken:"3787",
+//   interval:"ONE_DAY",
+//   fromDate:"2026-03-03 09:15",
+//   toDate:"2026-03-10 15:15",
+//   })
   
-  // await getStockData();
-})();
+//   })();
