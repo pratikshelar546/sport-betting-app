@@ -5,11 +5,14 @@ import userRoutes from "./modules/user/route.js";
 import assetRoute from "./modules/assets/route.js";
 import transactionRoute from "./modules/transaction/route.js";
 import dotenv from 'dotenv';
+import cronJobs from './utlis/cronJobs.js';
+import { getSessionToken } from './utlis/authToken.js';
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 dotenv.config();
+cronJobs.start();
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");

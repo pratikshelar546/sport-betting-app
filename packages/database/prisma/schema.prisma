@@ -128,3 +128,12 @@ model watchList {
   updatedAt DateTime @updatedAt
   @@index([userId, isDeleted(sort: Desc)])
 }
+
+model smartApiToken {
+  id String @id @default(uuid())
+  authToken String
+  refreshToken String
+  feedToken String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

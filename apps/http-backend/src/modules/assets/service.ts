@@ -8,8 +8,15 @@ import { formatDate, parseToDate } from "../../utlis/dateFormatter.js";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
+import fs from "fs";
+import Bottleneck from "bottleneck";
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+const limiter = new Bottleneck({
+  minTime:400,
+  maxConcurrent:1
+})
 
 export const addAsset = async ({
   userId,
@@ -93,8 +100,6 @@ export const fetchCandleData = async ({
     // 2. Parse the date strings to Date objects
     const fromDateObj = dayjs.tz(fromDate, "Asia/Kolkata").toDate();
     const toDateObj = dayjs.tz(toDate, "Asia/Kolkata").toDate();
-console.log(fromDateObj,toDateObj,"from date and to date");
-
     // 3. Query for existing local candlestick data
     let candleData = await prismaClient.stock_candle_data.findMany({
       where: {
@@ -207,6 +212,45 @@ export const watchListStockService = async ({
   }
 }
 
+const fetchCandleDataWithLimiter = limiter.wrap(fetchCandleData);
+export const cronJobToFetchDailyCandleData = async()=>{
+  try {
+    // Fetch unique stockIds from watchList and join with stocks table to get token and exch_seg in a single query
+    const stocks = await prismaClient.watchList.findMany({
+      where: {
+        isDeleted: false,
+      },
+      distinct: ['stockId'],
+      select: {
+        stock: {
+          select: {
+            token: true,
+            exch_seg: true,
+          }
+        }
+      }
+    });
+    console.log(stocks,"stocks");
+    if(!stocks){
+      throw new Error("There is no stocks in watchlist")
+    }
+    for(const stock of stocks){
+      const candleData = await fetchCandleDataWithLimiter({
+       exchange: stock.stock.exch_seg,
+       symboltoken:stock.stock.token,
+       interval:"ONE_DAY",
+       // Fetch only today's candle
+       fromDate: dayjs().startOf('day').subtract(2, 'day').hour(9).minute(0).second(0).format("YYYY-MM-DD HH:mm"),
+       toDate: dayjs().startOf('day').hour(15).minute(30).second(0).format("YYYY-MM-DD HH:mm"),
+      })
+      let data =`${new Date().toISOString()}-${stock.stock.token}-candleFetched-${JSON.stringify(candleData, null, 2)}`;
+      fs.appendFileSync('candleData.logs', data + '\n');
+    }
+  } catch (error) {
+    console.log("error while fetching daily candle data",error);
+    
+  }
+}
 
 const dumpStocks = async()=>{
   try {

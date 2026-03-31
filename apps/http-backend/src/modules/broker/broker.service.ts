@@ -49,7 +49,6 @@ export const getCandlesFromBroker = async ({
         'Content-Type': 'application/json'
       }
   } as any
-  console.log(data,"fetching data from broker");
   
   //   const data = {
   //     mode:"FULL",
@@ -1063,13 +1062,10 @@ export const getCandlesFromBroker = async ({
   
 //     }
 if(response.data.status){
-    console.log("data found in broker",response.data.data);
-    
+  console.log("fetched data from angel broking api");
+  
     return response.data.data;
-    
 }else{
-    console.log(fromDate,toDate,response.data,"response datatataatatatatatatatatta--------------------------------------");
-    
     throw new AppError("No data found in broker", 404);
 }
 
