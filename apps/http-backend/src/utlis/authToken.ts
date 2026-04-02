@@ -79,7 +79,7 @@ export async function getSessionToken() {
       });
     }
 
-    return true;
+    return session.data.jwtToken;
 
   } catch (error: any) {
     console.error("error while getting auth token", error);

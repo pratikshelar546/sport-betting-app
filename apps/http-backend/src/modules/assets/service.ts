@@ -80,7 +80,7 @@ export const fetchOrderBook = async ({ symbol }: { symbol: string }) => {
 export const fetchCandleData = async ({
   exchange,
   symboltoken,
-  interval,
+  interval="ONE_MINUTE",
   fromDate,
   toDate,
 }: {
@@ -151,12 +151,13 @@ let finalData = candleData;
           stockId: asset.id,
           interval,
         }));
+        
         // Save to DB (helper should handle dupes)
        syncCandleToDb(dbCandles);
         finalData = dbCandles;
       }
     }
-    return true;
+    return finalData;
   } catch (error) {
     throw error;
   }

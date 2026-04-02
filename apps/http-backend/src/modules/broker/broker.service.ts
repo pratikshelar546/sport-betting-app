@@ -1,5 +1,7 @@
 import axios from "axios"
 import { AppError } from "../../utlis/AppError.js"
+import prismaClient from "@repo/database/client"
+import { getSessionToken } from "../../utlis/authToken.js"
 
 /**
  * Fetches candlestick (OHLCV) data for a stock from an external API if not available in the database.
@@ -34,7 +36,44 @@ export const getCandlesFromBroker = async ({
     fromdate:fromDate,
     todate:toDate
     }
-    
+    const smartApiTokenData = await prismaClient.smartApiToken.findFirst({  
+      orderBy: { createdAt: "desc" },
+    });
+    let JWT_AUTH_TOKEN:string;
+    if(smartApiTokenData){
+      function decodeJwt(token: string) {
+        try {
+          const payload = token.split('.')[1];
+          if (!payload) return null;
+          // atob returns a string, JSON.parse will give the object
+          return JSON.parse(Buffer.from(payload, "base64").toString());
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // Validate expiry
+      let tokenValid = true;
+      if (smartApiTokenData.authToken) {
+        const payload = decodeJwt(smartApiTokenData.authToken);
+        console.log("payload of jwt token",payload);
+        if (payload && payload.exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (payload.exp < now) {
+            tokenValid = false;
+          }
+        }
+      }
+      if (!tokenValid) {
+        JWT_AUTH_TOKEN = await getSessionToken();
+      } else {
+        JWT_AUTH_TOKEN = smartApiTokenData.authToken;
+      }
+      JWT_AUTH_TOKEN = smartApiTokenData.authToken;
+    }else{
+      JWT_AUTH_TOKEN = await getSessionToken();
+    } 
+console.log("JWT_AUTH_TOKEN",JWT_AUTH_TOKEN);
     const config = {
   
       headers: { 
@@ -45,7 +84,7 @@ export const getCandlesFromBroker = async ({
         'X-ClientPublicIP': '8.8.8.8', 
           'X-MACAddress': '00:00:00:00:00:00',
           'X-UserType': 'USER',
-        'Authorization': 'Bearer '+process.env.JWT_AUTH_TOKEN, 
+        'Authorization': 'Bearer '+JWT_AUTH_TOKEN, 
         'Content-Type': 'application/json'
       }
   } as any
@@ -1061,6 +1100,9 @@ export const getCandlesFromBroker = async ({
 //   ]
   
 //     }
+
+console.log(response.data?.data?.length,"responseeeeee");
+
 if(response.data.status){
   console.log("fetched data from angel broking api");
   
