@@ -7,6 +7,7 @@ import transactionRoute from "./modules/transaction/route.js";
 import dotenv from 'dotenv';
 import cronJobs from './utlis/cronJobs.js';
 import { getSessionToken } from './utlis/authToken.js';
+import { getSignalBySMA20 } from './modules/engine/services/signalLogic.services.js';
 const app = express();
 
 app.use(express.json());
@@ -33,6 +34,8 @@ app.use("/api/v1/asset", assetRoute);
 app.use("/api/v1/transaction", transactionRoute);
 
 // app.use(errorHandler);
+
+getSignalBySMA20("3787")
 
 app.listen(8000, () => {
   console.log("Server is running on port 8000");
