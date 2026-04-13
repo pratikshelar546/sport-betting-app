@@ -23,6 +23,7 @@ async function getDailyCandles(token: string, days: number) {
 export const getSignalBySMA20 = async (token:string) =>{
     try {
         const stocksList = await getDailyCandles(token,21) as ICandleData[]
+        console.log(stocksList[1],"stocksList");
         
         if (!stocksList || stocksList?.length === 0) throw new Error("No stock candle data found");
         console.log(stocksList?.length,"Stockssss");

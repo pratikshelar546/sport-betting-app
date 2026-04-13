@@ -35,7 +35,7 @@ app.use("/api/v1/transaction", transactionRoute);
 
 // app.use(errorHandler);
 
-getSignalBySMA20("3787")
+// getSignalBySMA20("18365")
 
 app.listen(8000, () => {
   console.log("Server is running on port 8000");

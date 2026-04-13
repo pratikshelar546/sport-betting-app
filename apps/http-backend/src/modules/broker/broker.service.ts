@@ -17,7 +17,7 @@ import { getSessionToken } from "../../utlis/authToken.js"
 export const getCandlesFromBroker = async ({
     exchange,
     symboltoken,
-    interval ="ONE_MINUTE",
+    interval ="ONE_DAY",
     fromDate,
     toDate
   }:{
@@ -36,6 +36,8 @@ export const getCandlesFromBroker = async ({
     fromdate:fromDate,
     todate:toDate
     }
+    console.log(data,"data");
+    
     const smartApiTokenData = await prismaClient.smartApiToken.findFirst({  
       orderBy: { createdAt: "desc" },
     });
@@ -56,7 +58,6 @@ export const getCandlesFromBroker = async ({
       let tokenValid = true;
       if (smartApiTokenData.authToken) {
         const payload = decodeJwt(smartApiTokenData.authToken);
-        console.log("payload of jwt token",payload);
         if (payload && payload.exp) {
           const now = Math.floor(Date.now() / 1000);
           if (payload.exp < now) {
@@ -73,7 +74,7 @@ export const getCandlesFromBroker = async ({
     }else{
       JWT_AUTH_TOKEN = await getSessionToken();
     } 
-console.log("JWT_AUTH_TOKEN",JWT_AUTH_TOKEN);
+
     const config = {
   
       headers: { 
@@ -1146,7 +1147,7 @@ if(response.data.status){
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
       console.error("HTTP Status:", error.response.status);
-      console.error("Server Error Data:", error.response);
+      console.error("Server Error Data:", error.message);
     } else if (error.request) {
       // The request was made but no response was received
       console.error("No Response Received:", error.request);
@@ -1157,3 +1158,14 @@ if(response.data.status){
   
   }
   }
+
+  (async()=>{
+    const candles = await getCandlesFromBroker({
+      exchange:"NSE",
+      symboltoken:"18365",
+      interval:"ONE_DAY",
+      fromDate:"2026-04-06 09:15",
+      toDate:"2026-04-07 15:30"
+    });
+    console.log(candles,"candles");
+  })();

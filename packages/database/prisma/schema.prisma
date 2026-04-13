@@ -1,5 +1,5 @@
 // prisma/schema.prisma
-// npx primsa migrate dev --name comments
+// npx prisma migrate dev --name comments
 // npx prisma generate
 generator client {
   provider = "prisma-client-js"

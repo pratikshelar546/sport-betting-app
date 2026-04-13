@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import OrderBook from "./OrderBook";
 import OrderModal from "./OrderModal";
 import Tab from "./Tab";
+import { log } from "next/dist/server/typescript/utils";
 export interface Asset {
   symbol: string;
   exch_seg: string;
@@ -128,22 +129,56 @@ useEffect(() => {
 useEffect(() => {
   if (seriesRef.current && candles.length > 0) {
     const timeScale = chartInstance.current.timeScale();
-    
-    // 1. Capture where the user is looking BEFORE the update
-    const logicalRange = timeScale.getVisibleLogicalRange();
-    
-    const formattedData = candles.map((c: any) => ({
-      time: Math.floor(new Date(c.timestamp).getTime() / 1000) as any,
-      open: c.open, high: c.high, low: c.low, close: c.close,
-    }));
-    
-    seriesRef.current.setData(formattedData);
 
-    // 2. If this was a historical prepend, restore the position
+    // Capture where the user is looking BEFORE the update
+    const logicalRange = timeScale.getVisibleLogicalRange();
+
+    // Ensure candles are ordered ASCENDING by timestamp,
+    // and filter out any duplicate timestamps
+    let sortedCandles = [...candles]
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    // Remove any duplicate timestamps
+    // (Lightweight Charts requires strictly ascending timestamps)
+    let dedupedCandles: any[] = [];
+    for (let i = 0; i < sortedCandles.length; i++) {
+      const ts = new Date(sortedCandles[i].timestamp).getTime();
+      if (
+        i === 0 ||
+        ts !== new Date(sortedCandles[i - 1].timestamp).getTime()
+      ) {
+        dedupedCandles.push(sortedCandles[i]);
+      }
+    }
+
+    // For developer debugging: check for strictly ascending order
+    for (let i = 1; i < dedupedCandles.length; i++) {
+      const prevTime = new Date(dedupedCandles[i - 1].timestamp).getTime() / 1000;
+      const currTime = new Date(dedupedCandles[i].timestamp).getTime() / 1000;
+      if (currTime <= prevTime) {
+        if (process.env.NODE_ENV !== "production") {
+          // Only throw in dev
+          throw new Error(
+            `Assertion failed: data must be strictly asc ordered by time, index=${i}, time=${currTime}, prev time=${prevTime}`
+          );
+        }
+      }
+    }
+
+    const formattedData = dedupedCandles.map((c: any) => ({
+      time: Math.floor(new Date(c.timestamp).getTime() / 1000) as any,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
+
+    seriesRef?.current?.setData(formattedData);
+
+    // If this was a historical prepend, restore the position
     if (logicalRange !== null) {
-       // This math keeps the bars under the user's cursor from moving
-       // when new data is added to the left.
-       // timeScale.scrollToLogicalRange(logicalRange); 
+      // Uncomment if you wish to maintain scroll position
+      // timeScale.scrollToLogicalRange(logicalRange);
     }
   }
 }, [candles]);
@@ -167,15 +202,18 @@ useEffect(() => {
       console.log(newVisibleRange,"newVisibleRange",isLoading, isAtEnd);
       
       if (newVisibleRange.from < 10 && !isLoading && !isAtEnd) {
+        console.log("----------------------------------------");
         const oldestCandle = candles[0];
         if (oldestCandle) {
           // We want data BEFORE the oldest candle we have
           const toDate = dayjs(oldestCandle.timestamp).subtract(1, 'minute').format("YYYY-MM-DD HH:mm");
-          const newFromDate = dayjs(oldestCandle.timestamp).subtract(5, 'days').format("YYYY-MM-DD HH:mm");
+          const newFromDate = dayjs(oldestCandle.timestamp).subtract(95, 'days').format("YYYY-MM-DD HH:mm");
+          console.log(newFromDate, toDate,"newFromDate and toDate -------------------");
+          
           setFromDate(newFromDate);
           setToDate(toDate);
-          const prevDay315 = dayjs(fromDate).subtract(1, 'day').set('hour', 15).set('minute', 15).format("YYYY-MM-DD HH:mm");
-          fetchCandleData(newFromDate, prevDay315);
+          
+          fetchCandleData(newFromDate, toDate);
         }
       }
     }, DEBOUNCE_DELAY);
@@ -188,7 +226,6 @@ useEffect(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
   };
 }, [candles, isLoading, isAtEnd]);
-console.log(fromDate, toDate,"from date and to date -------------------");
 
   const getData = async () => {
     setLoading(true);
@@ -219,7 +256,6 @@ console.log(fromDate, toDate,"from date and to date -------------------");
 
   const fetchCandleData = async (fromDate:string, toDate:string) => {
     console.log("fetching candle data");
-    console.log("-------------------",fromDate, toDate,"------------------- ");
     
     setIsLoading(true);
     if (!asset?.token) return;
@@ -237,7 +273,6 @@ console.log(fromDate, toDate,"from date and to date -------------------");
       // setIsAtEnd(true);
     }
   };
-console.log(candles.length,"candles length -------------------");
 
   useEffect(() => {
     if (orderType === "Buy") {
@@ -252,37 +287,42 @@ console.log(candles.length,"candles length -------------------");
     // eslint-disable-next-line
   }, [id]);
 
-  useEffect(()=>{
-    if(asset){
-
-      // Handle market session - if before market open (9:15), use yesterday's session
+  useEffect(() => {
+    if (asset) {
+      // Fetch the past 95 days of daily candles, up to the latest completed session (i.e., not today's in-progress candle)
       const now = dayjs();
+
+      // End date should be yesterday's close if before market open, otherwise today's close (or the latest market close)
+      let endDate: dayjs.Dayjs;
+
       const marketOpen = now.set('hour', 9).set('minute', 15).set('second', 0).set('millisecond', 0);
       const marketClose = now.set('hour', 15).set('minute', 15).set('second', 0).set('millisecond', 0);
 
-      let fromDate: string;
-      let toDate: string;
-
       if (now.isBefore(marketOpen)) {
-        // Before market opens, use previous day's session
-        const yesterday = now.subtract(1, 'day');
-        const prevMarketOpen = yesterday.set('hour', 9).set('minute', 15).set('second', 0).set('millisecond', 0);
-        const prevMarketClose = yesterday.set('hour', 15).set('minute', 15).set('second', 0).set('millisecond', 0);
-        fromDate = prevMarketOpen.format("YYYY-MM-DD HH:mm");
-        toDate = prevMarketClose.format("YYYY-MM-DD HH:mm");
+        // Before market opens, use yesterday's close
+        endDate = now.subtract(1, 'day').set('hour', 15).set('minute', 15).set('second', 0).set('millisecond', 0);
+      } else if (now.isAfter(marketClose)) {
+        // After today's close, use today's close
+        endDate = marketClose;
       } else {
-        // After market open today, use today's session up to now or close time
-        fromDate = marketOpen.format("YYYY-MM-DD HH:mm");
-        toDate = now.isAfter(marketClose) ? marketClose.format("YYYY-MM-DD HH:mm") : now.format("YYYY-MM-DD HH:mm");
+        // During market session, use yesterday's close as last fully completed candle
+        endDate = now.subtract(1, 'day').set('hour', 15).set('minute', 15).set('second', 0).set('millisecond', 0);
       }
+
+      // Start date is 95 days before endDate at session open time
+      const startDate = endDate.subtract(94, 'day').set('hour', 9).set('minute', 15).set('second', 0).set('millisecond', 0);
+
+      const fromDate = startDate.format("YYYY-MM-DD HH:mm");
+      const toDate = endDate.format("YYYY-MM-DD HH:mm");
 
       setFromDate(fromDate);
       setToDate(toDate);
-      if(fromDate && toDate){
+
+      if (fromDate && toDate) {
         fetchCandleData(fromDate, toDate);
       }
     }
-  },[asset])
+  }, [asset]);
 
   if (loading) {
     return (

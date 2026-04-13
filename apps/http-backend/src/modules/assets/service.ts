@@ -80,7 +80,7 @@ export const fetchOrderBook = async ({ symbol }: { symbol: string }) => {
 export const fetchCandleData = async ({
   exchange,
   symboltoken,
-  interval="ONE_MINUTE",
+  interval="ONE_DAY",
   fromDate,
   toDate,
 }: {
@@ -113,21 +113,28 @@ export const fetchCandleData = async ({
       orderBy: { timestamp: "asc" }
     });
 
-    // 4. Check if local data doesn't fully cover the requested window (i.e. has missing edges)
+    // 4. Check if local data *fully* covers the requested window, i.e. 
+    // - first candle should be at or before fromDateObj
+    // - last candle should be at or after toDateObj
+    // - and all days in between are present (can skip this check for now; typically gapless in db if range is covered)
     let needsBrokerFetch = false;
-    const expectedMinutes = dayjs(toDateObj).diff(dayjs(fromDateObj), 'minute');
-    const actualCount = candleData.length;
-    
-    // If we have less than 90% of the expected data, fetch from broker
-    // This accounts for small gaps like lunch breaks or low liquidity
-    if (actualCount < expectedMinutes * 0.9) {
-        needsBrokerFetch = true;
+    const firstCandle = candleData[0];
+    const lastCandle = candleData[candleData.length - 1];
+
+    if (
+      candleData.length === 0 ||
+      // If first candle is after the requested fromDate, we have missing "start"
+      (firstCandle !== undefined && firstCandle.timestamp > fromDateObj) ||
+      // If last candle is before requested toDate, we have missing "end"
+      (lastCandle !== undefined && lastCandle.timestamp < toDateObj)
+    ){
+      needsBrokerFetch = true;
     }
 
-    
-let finalData = candleData;
-    if (!candleData || candleData.length === 0 || needsBrokerFetch) {
-      // On missing coverage, always fetch the full requested window from broker!
+    let finalData = candleData;
+
+    if (needsBrokerFetch) {
+      // Always fetch the *FULL* requested window from broker if there's any edge missing
       const brokerCandles = await getCandlesFromBroker({
         exchange,
         symboltoken,
@@ -138,7 +145,6 @@ let finalData = candleData;
 
       // Only if we got data, transform and save to DB (idempotent insert)
       if (brokerCandles && brokerCandles.length > 0) {
-        
         const dbCandles = brokerCandles.map((candle: any) => ({
           timestamp: dayjs(candle[0]).toDate(),
           open: candle[1],
@@ -151,9 +157,9 @@ let finalData = candleData;
           stockId: asset.id,
           interval,
         }));
-        
+
         // Save to DB (helper should handle dupes)
-       syncCandleToDb(dbCandles);
+        syncCandleToDb(dbCandles);
         finalData = dbCandles;
       }
     }
@@ -304,14 +310,14 @@ const dumpStocks = async()=>{
 
 
 
-// (async()=>{
-//   console.log("running dump stocks");
-//   const data = await fetchCandleData({
-//   exchange:"NSE",
-//   symboltoken:"3787",
-//   interval:"ONE_DAY",
-//   fromDate:"2026-03-03 09:15",
-//   toDate:"2026-03-10 15:15",
-//   })
-  
-//   })();
+(async()=>{
+  // console.log("running dump stocks");
+  // const data = await fetchCandleData({
+  // exchange:"NSE",
+  // symboltoken:"3787",
+  // interval:"ONE_DAY",
+  // fromDate:"2026-03-03 09:15",
+  // toDate:"2026-03-10 15:15",
+  // })
+  // dumpStocks()
+  })();
