@@ -7,7 +7,7 @@ import transactionRoute from "./modules/transaction/route.js";
 import dotenv from 'dotenv';
 import cronJobs from './utlis/cronJobs.js';
 import { getSessionToken } from './utlis/authToken.js';
-import { getSignalBySMA20 } from './modules/engine/services/signalLogic.services.js';
+import './modules/engine/services/signalLogic.services.js';
 const app = express();
 
 app.use(express.json());

@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { cronJobToFetchDailyCandleData } from "../modules/assets/service.js";
 import { getSessionToken } from "./authToken.js";
+import { fetchAllWhatchkistedAndGetSignal, getSignal } from "../modules/engine/services/signalLogic.services.js";
 
 const cronJobs = {
   start:()=>{
@@ -15,6 +16,21 @@ const cronJobs = {
     cron.schedule("0 0 * * *",async()=>{
       console.log("Running cron job");
       await getSessionToken();
+    })
+
+    cron.schedule("13 0 * * *", async () => {
+      // cron.schedule("*/2 * * * * *",async()=>{
+      console.log("Running cron job");
+      const stocks = await fetchAllWhatchkistedAndGetSignal();
+      console.log("stocks count", stocks.length);
+
+      const signals: any = [];
+      for (const stock of stocks) {
+        const signal = await getSignal(stock.token);
+        signals.push({ ...signal });
+      }
+      console.log(signals,"signals");
+      
     })
   }
 }

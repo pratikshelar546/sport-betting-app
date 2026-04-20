@@ -1,6 +1,6 @@
 export interface ICandleData {
     id: string;
-    timestamp: string;  // ISO string representation of DateTime
+    timestamp: Date;  // ISO string representation of DateTime
     open: number;
     high: number;
     low: number;
