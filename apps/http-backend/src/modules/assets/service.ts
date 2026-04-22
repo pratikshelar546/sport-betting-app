@@ -1,15 +1,14 @@
 import prismaClient from "@repo/database/client";
-import { Asset } from "./types.js";
-import { AppError } from "../../utlis/AppError.js";
 import axios from "axios";
-import { getCandlesFromBroker } from "../broker/broker.service.js";
-import { syncCandleToDb } from "./helper.js";
-import { formatDate, parseToDate } from "../../utlis/dateFormatter.js";
+import Bottleneck from "bottleneck";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import fs from "fs";
-import Bottleneck from "bottleneck";
+import { AppError } from "../../utlis/AppError.js";
+import { getCandlesFromBroker } from "../market-data/maret-data.service.js";
+import { syncCandleToDb } from "./helper.js";
+import { Asset } from "./types.js";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -40,6 +39,19 @@ export const addAsset = async ({
     throw error;
   }
 };
+
+export const getAssetById = async ({id}: {id:string}) =>{
+  try {
+    const asset = await prismaClient.asset.findUnique({
+      where: {
+        id,
+      },
+    });
+    return asset;
+  } catch (error) {
+    throw error
+  }
+}
 
 export const getAssetDetails = async ({ symbol,token }: { symbol?: string | undefined,token?:string | undefined  }): Promise<any> => {
   try {
@@ -169,55 +181,6 @@ export const fetchCandleData = async ({
   }
 }
 
-export const watchListStockService = async ({
-  token,
-  userId}:{
-    token:string,
-    userId:string,
-  }):Promise<any>=>{
-  try {
-  const stock = await getAssetDetails({
-    token:token as string
-  });
-  if(!stock) throw new AppError("Stock not found", 404);
-
-  const findAlreadyWatching = await prismaClient.watchList.findFirst({
-    where:{
-      userId,
-      stockId:stock.id,
-    }
-  })
-  if(findAlreadyWatching) throw new AppError("Stock already in watchlist", 400);
-
-  const addToWatcchList = await prismaClient.watchList.create({
-    data:{
-      userId,
-      stockId:stock.id,
-    }
-  })
-
-
-  // Get the date two years ago from today in YYYY-MM-DD format
-  const pastTwoYearDate = dayjs().subtract(2, "year").format("YYYY-MM-DD HH:mm");
-  const todaysDate = dayjs().format("YYYY-MM-DD HH:mm");
-
-  const candleData = await fetchCandleData({
-    exchange:stock.exch_seg,
-    symboltoken:stock.token,
-    interval:"ONE_DAY",
-    fromDate:pastTwoYearDate,
-    toDate:todaysDate,
-  })
-
- return true;
-  
-
-  } catch (error) {
-    console.log("error while watching stock",error);
-    
-    throw error;
-  }
-}
 
 const fetchCandleDataWithLimiter = limiter.wrap(fetchCandleData);
 export const cronJobToFetchDailyCandleData = async()=>{

@@ -2,6 +2,7 @@ import axios from "axios"
 import { AppError } from "../../utlis/AppError.js"
 import prismaClient from "@repo/database/client"
 import { getSessionToken } from "../../utlis/authToken.js"
+import { ICandleData } from "./market-data.types.js";
 
 /**
  * Fetches candlestick (OHLCV) data for a stock from an external API if not available in the database.
@@ -164,3 +165,19 @@ if(response.data.status){
     });
     console.log(candles,"candles");
   });
+
+  export const getCandleByStockAndDays = async (
+    token: string,
+    days: number,
+  ): Promise<ICandleData[]> =>{
+    // This query groups 1-min data into 1-day buckets
+    return await prismaClient.stock_candle_data.findMany({
+      where: {
+        symboltoken: token,
+      },
+      orderBy: {
+        timestamp: "desc",
+      },
+      take: days,
+    });
+  }

@@ -6,8 +6,7 @@ import assetRoute from "./modules/assets/route.js";
 import transactionRoute from "./modules/transaction/route.js";
 import dotenv from 'dotenv';
 import cronJobs from './utlis/cronJobs.js';
-import { getSessionToken } from './utlis/authToken.js';
-import './modules/engine/services/signalLogic.services.js';
+import watchlistRoutes from "./modules/watchlist/watchlist.routes.js";
 const app = express();
 
 app.use(express.json());
@@ -32,6 +31,7 @@ app.use((req, res, next) => {
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/asset", assetRoute);
 app.use("/api/v1/transaction", transactionRoute);
+app.use("/api/v1/watchlist", watchlistRoutes);
 
 // app.use(errorHandler);
 

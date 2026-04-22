@@ -26,7 +26,7 @@ const AssetCard = ({ asset,userToken }: { asset: Stocks,userToken:string }) => {
 console.log(userToken,"userToken");
   const watchListStock = async () => {
     try {
-      const res = await server.get(`/asset/watchlist/${asset.token}`, {
+      const res = await server.get(`/watchlist/watchlist/${asset.token}`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
