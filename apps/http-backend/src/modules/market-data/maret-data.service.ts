@@ -170,7 +170,6 @@ if(response.data.status){
     token: string,
     days: number,
   ): Promise<ICandleData[]> =>{
-    // This query groups 1-min data into 1-day buckets
     return await prismaClient.stock_candle_data.findMany({
       where: {
         symboltoken: token,
